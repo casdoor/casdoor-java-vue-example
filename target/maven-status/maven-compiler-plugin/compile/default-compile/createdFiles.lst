@@ -1,7 +1,0 @@
-org\casbin\casdoor\demo\util\Response.class
-org\casbin\casdoor\demo\config\CORSFilter.class
-org\casbin\casdoor\demo\config\CasdoorConfiguration.class
-org\casbin\casdoor\demo\controller\IndexController.class
-org\casbin\casdoor\demo\DemoApplication.class
-org\casbin\casdoor\demo\config\CasdoorAutoConfigure.class
-org\casbin\casdoor\demo\controller\AccountController.class
