@@ -10,6 +10,9 @@ Example contains 2 parts:
 | Frontend | casdoor-vue-sdk    | Javascript + Vue | https://github.com/casdoor/casdoor-java-vue-example/tree/master/web       |
 | Backend  | casdoor-java-sdk   | Java + Springboot| https://github.com/casdoor/casdoor-java-vue-example                       |
 
+### Demo videos
+![normalLogin](./img/login.gif)
+
 ## Installation
 
 Example uses Casdoor to manage members. So you need to create an organization and an application for the example in a Casdoor instance. For how to install Casdoor, see: https://casdoor.org/docs/basic/server-installation
