@@ -17,12 +17,14 @@ import App from './App.vue'
 import router from './route/index'
 import Casdoor from 'casdoor-vue-sdk'
 
+// the Casdoor application, the defaults are the public demo server https://door.casdoor.com
 const config = {
-  serverUrl: "https://demo.casdoor.com",
+  serverUrl: "https://door.casdoor.com",
   clientId: "294b09fbc17f95daf2fe",
   organizationName: "casbin",
-  appName: "app-vue-spring-boot-example",
+  appName: "app-vue-python-example",
   redirectPath: "/callback",
+  signinPath: "/api/signin",
 };
 const app = createApp(App)
 app.use(Casdoor, config)

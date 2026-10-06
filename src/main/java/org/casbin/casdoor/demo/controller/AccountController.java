@@ -1,60 +1,76 @@
 package org.casbin.casdoor.demo.controller;
 
-import org.casbin.casdoor.demo.util.Response;
-import org.casbin.casdoor.entity.CasdoorUser;
-import org.casbin.casdoor.exception.CasdoorAuthException;
-import org.casbin.casdoor.service.CasdoorAuthService;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import org.casbin.casdoor.entity.User;
+import org.casbin.casdoor.exception.AuthException;
+import org.casbin.casdoor.service.AuthService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Resource;
-import javax.servlet.http.HttpSession;
-
-//@CrossOrigin(allowCredentials = "true")
-@Controller
+@RestController
+@RequestMapping("/api")
 public class AccountController {
-    @Resource
-    private CasdoorAuthService casdoorAuthService;
 
-//    @RequestMapping(value = "/toLogin", method = RequestMethod.GET)
-//    public String login() {
-//       // System.out.println(casdoorAuthService.getSigninUrl("http://localhost:8081/callback"));
-//        return "redirect:" + casdoorAuthService.getSigninUrl("http://localhost:8081/callback");
-//    }
+    private static final String USER = "casdoorUser";
+    private static final String ACCESS_TOKEN = "casdoorAccessToken";
 
+    private final AuthService authService;
 
-    @ResponseBody
-    @PostMapping( "/api/signin")
-    public Response callback(String code, String state, HttpSession session) {
-        String token = "";
-        CasdoorUser user = null;
+    public AccountController(AuthService authService) {
+        this.authService = authService;
+    }
+
+    /**
+     * Exchanges the code from Casdoor for an access token, verifies the token and keeps the user in the session.
+     * The frontend checks the state before calling this.
+     */
+    @PostMapping("/signin")
+    public ResponseEntity<Response> signin(@RequestParam String code, @RequestParam String state,
+                                           HttpServletRequest request) {
+        String token;
+        User user;
         try {
-            token = casdoorAuthService.getOAuthToken(code, state);
-            user = casdoorAuthService.parseJwtToken(token);
-        } catch (CasdoorAuthException e) {
-            e.printStackTrace();
-            return new Response("fail",null);
+            token = authService.getOAuthToken(code, state);
+            user = authService.parseJwtToken(token);
+        } catch (AuthException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Response.error(e.getMessage()));
         }
-        session.setAttribute("casdoorUser", user);
-        return new Response("ok", null);
+
+        // a new session ID for the signed-in user, against session fixation
+        request.getSession();
+        request.changeSessionId();
+        request.getSession().setAttribute(USER, user);
+        request.getSession().setAttribute(ACCESS_TOKEN, token);
+        return ResponseEntity.ok(Response.ok(null));
     }
 
-    @ResponseBody
-    @RequestMapping(value = "getUser", method = RequestMethod.GET)
-    public Response getUser(HttpSession session) throws Exception {
-        CasdoorUser user = (CasdoorUser) session.getAttribute("casdoorUser");
-        if(user==null){
-            return new Response("fail",null);
+    @GetMapping("/get-account")
+    public ResponseEntity<Response> getAccount(HttpSession session) {
+        User user = (User) session.getAttribute(USER);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Response.error("Not signed in"));
         }
-        return new Response("ok",user);
+        return ResponseEntity.ok(Response.ok(user));
     }
 
-    @ResponseBody
-    @RequestMapping(value = "/logout", method = RequestMethod.POST)
-    public Response logout(HttpSession session) throws Exception {
-        session.setAttribute("casdoorUser", null);
-        return new Response("ok",null);
+    @PostMapping("/signout")
+    public Response signout(HttpSession session) {
+        Object token = session.getAttribute(ACCESS_TOKEN);
+        if (token != null) {
+            try {
+                // also end the user's session in Casdoor, so that signing in again asks for the password
+                authService.logoutCurrentSession(token.toString());
+            } catch (RuntimeException e) {
+                // the Casdoor session may already have ended
+            }
+        }
+        session.invalidate();
+        return Response.ok(null);
     }
-
-
 }

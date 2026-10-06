@@ -15,22 +15,17 @@
 import * as config from "@/config"
 
 function getAccount() {
-  return fetch(`${config.serverUrl}/getUser`, {
+  return fetch(`${config.serverUrl}/api/get-account`, {
     method: 'GET',
     credentials: 'include',
-  }).then(res => {
-    console.log(res)
-    return res.json()
-  });
+  }).then(res => res.json());
 }
 
 function logOut() {
-  return fetch(`${config.serverUrl}/logout`, {
+  return fetch(`${config.serverUrl}/api/signout`, {
     method: 'POST',
     credentials: 'include',
-  }).then((res => {
-    return res.json()
-  }));
+  }).then(res => res.json());
 }
 
 export default {

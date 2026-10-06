@@ -17,22 +17,26 @@
 </template>
 
 <script setup>
-import { onMounted, getCurrentInstance } from 'vue'
+import { onMounted } from 'vue'
+import { useCasdoor } from 'casdoor-vue-sdk'
 import * as config from '@/config'
 
+const casdoor = useCasdoor()
+
 function login() {
-  const instance = getCurrentInstance()
-  instance.proxy.signin(config.serverUrl).then((res) => {
+  // checks the state, then posts the code to the backend: POST /api/signin
+  casdoor.signin(config.serverUrl).then((res) => {
+    if (inIframe()) {
+      // the silent sign-in iframe reports the result to the page
+      const message = {tag: "Casdoor", type: "SilentSignin", data: res.status === 'ok' ? "success" : "login-failure"};
+      window.parent.postMessage(message, window.location.origin);
+      return
+    }
     if (res.status === 'ok') {
-      //alert('Login success')
-      if (inIframe()) {
-        const message = {tag: "Casdoor", type: "SilentSignin", data: "success"};
-        window.parent.postMessage(message, "*");
-      }
       window.location.href = '/home'
     } else {
       alert(`Login failed: ${res.msg}`)
-      window.location.href = '/'
+      window.location.href = '/login'
     }
   })
 }

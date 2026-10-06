@@ -17,12 +17,6 @@
     <img id="logo" alt="Vue logo" src="./assets/casbin.svg">
     <p id="logoText">Casdoor Vue-Java SDK example</p>
   </div>
-  <p>
-    <router-link to="/login"></router-link>
-    <router-link to="/callback"></router-link>
-    <router-link to="/about"></router-link>
-    <router-link to="/home"></router-link>
-  </p>
   <router-view></router-view>
 </template>
 
@@ -31,23 +25,20 @@ import { onMounted } from 'vue'
 import backend from '@/backend/backend'
 import { useCasdoor } from 'casdoor-vue-sdk';
 onMounted(() => {
-  const { silentSignin } = useCasdoor()
+  const casdoor = useCasdoor()
   const params = new URLSearchParams(window.location.search);
   const key = params.get("silentSignin")
-  if (key == 1) {
-    console.log("test")
-    silentSignin(()=>{window.location.href = './home'},()=>{console.log("false")});
+  if (key === "1") {
+    casdoor.silentSignin(() => {
+      window.location.href = '/home'
+    }, () => {
+      window.location.href = '/login'
+    });
   } else {
     let url = window.location.pathname
     if (url === '/') {
       backend.getAccount().then((res) => {
-        if (res.status === 'ok') {
-          window.location.href = './home'
-        } else {
-          // console.log("no login:")
-          // console.log(res.data)
-          window.location.href = './login'
-        }
+        window.location.href = res.status === 'ok' ? '/home' : '/login'
       })
     }
   }

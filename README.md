@@ -1,102 +1,120 @@
-<h1 align="center" style="border-bottom: none;">📦⚡️Casdoor Vue + Java example</h1>
-<h3 align="center">An example of casdoor-vue-sdk and casdoor-java-sdk</h3>
+# Casdoor Java + Vue Example
 
-## Architecture
+[![Build](https://github.com/casdoor/casdoor-java-vue-example/actions/workflows/build.yml/badge.svg)](https://github.com/casdoor/casdoor-java-vue-example/actions/workflows/build.yml)
+[![License](https://img.shields.io/github/license/casdoor/casdoor-java-vue-example)](https://github.com/casdoor/casdoor-java-vue-example/blob/master/LICENSE)
+[![Discord](https://img.shields.io/discord/1022748306096537660?logo=discord&label=discord&color=5865F2)](https://discord.gg/5rPsrAzK7S)
 
-Example contains 2 parts:
+An example web app that signs users in with [Casdoor](https://casdoor.ai/), with a Vue frontend and a Java (Spring Boot) backend.
 
-| Name     | SDK                | Language         | Source code                                                               |
-|----------|--------------------|------------------|---------------------------------------------------------------------------|
-| Frontend | casdoor-vue-sdk    | Javascript + Vue | https://github.com/casdoor/casdoor-java-vue-example/tree/master/web       |
-| Backend  | casdoor-java-sdk   | Java + Springboot| https://github.com/casdoor/casdoor-java-vue-example                       |
+| Part     | SDK                                                               | Language             | Port |
+|----------|-------------------------------------------------------------------|----------------------|------|
+| Frontend | [casdoor-vue-sdk](https://github.com/casdoor/casdoor-vue-sdk)     | JavaScript + Vue 3   | 8080 |
+| Backend  | [casdoor-java-sdk](https://github.com/casdoor/casdoor-java-sdk)   | Java + Spring Boot 3 | 8081 |
 
-### Demo videos
-![normalLogin](./img/login.gif)
+![login](./img/login.gif)
 
-## Installation
+## How it works
 
-Example uses Casdoor to manage members. So you need to create an organization and an application for the example in a Casdoor instance. For how to install Casdoor, see: https://casdoor.org/docs/basic/server-installation
+1. **Sign in** sends the user to the Casdoor sign-in page (`getSigninUrl()` of casdoor-vue-sdk); the random `state` in the URL is kept in sessionStorage.
+2. After signing in, Casdoor redirects back to `http://localhost:8080/callback` with `code` and `state`.
+3. The callback page checks the state and sends the code to the backend (`signin()`): `POST /api/signin?code=...&state=...`.
+4. The backend exchanges the code for an access token (`AuthService.getOAuthToken()`), verifies it with the certificate (`AuthService.parseJwtToken()`) and keeps the user in the session.
+5. The frontend reads the signed-in user from `GET /api/get-account` and signs out with `POST /api/signout`, which also ends the Casdoor session.
 
-### Get the code
+| API                     | Description                                             |
+|-------------------------|---------------------------------------------------------|
+| `POST /api/signin`      | Exchanges the code for a token and starts the session   |
+| `GET /api/get-account`  | Returns the user of the session, 401 if not signed in   |
+| `POST /api/signout`     | Ends the session and the Casdoor session                |
 
-```shell
-git clone https://github.com/casdoor/casdoor-java-vue-example
-```
+Silent sign-in: open `http://localhost:8080/?silentSignin=1` while you are signed in to Casdoor in the same browser, and the app signs in through a hidden iframe without showing the Casdoor page.
+
+## Prerequisites
+
+- Java 17+ and Maven 3.9+
+- Node.js 18+ and Yarn
+- A Casdoor server. The example is preconfigured for the public demo server https://door.casdoor.com, so it runs as is. To use your own, see [Casdoor installation](https://casdoor.ai/docs/basic/server-installation).
 
 ## Configuration
 
+Skip this section to try the example with the public demo server.
+
+In your Casdoor, create (or reuse) an organization and an application, and add `http://localhost:8080/callback` to the application's **Redirect URLs**. Then fill in both parts:
+
 ### Frontend
 
-```js
-// in web/src/config.js
-export let serverUrl = `http://localhost:8081` // port where java backend runs
-```
+[web/src/main.js](web/src/main.js):
 
 ```js
-// in web/src/main.js
 const config = {
-  serverUrl: "https://demo.casdoor.com", // Casdoor server URL
-  clientId: "294b09fbc17f95daf2fe",
-  organizationName: "casbin",
-  appName: "app-vue-java-example",
+  serverUrl: "https://door.casdoor.com", // Casdoor server URL
+  clientId: "294b09fbc17f95daf2fe", // client ID of the application
+  organizationName: "casbin", // organization of the application
+  appName: "app-vue-python-example", // name of the application
   redirectPath: "/callback",
+  signinPath: "/api/signin",
 };
+```
+
+[web/src/config.js](web/src/config.js) holds the URL of the backend:
+
+```js
+export let serverUrl = `http://localhost:8081`
 ```
 
 ### Backend
 
+[src/main/resources/application.properties](src/main/resources/application.properties):
+
 ```properties
-#in application.properties
-# Casdoor server URL
-casdoor.endpoint=https://demo.casdoor.com 
-casdoor.client-id= 294b09fbc17f95daf2fe
-casdoor.client-secret=dd8982f7046ccba1bbd7851d5c1ece4e52bf039d
-#certificate:get in your Casdoor server -> application
-casdoor.certificate=\
-        -----BEGIN CERTIFICATE-----\n\
-        MIIE+TCCAuGgAwIBAgIDAeJAMA0GCSqGSIb3DQEBCwUAMDYxHTAbBgNVBAoTFENh\n\
-        c2Rvb3IgT3JnYW5pemF0aW9uMRUwEwYDVQQDEwxDYXNkb29yIENlcnQwHhcNMjEx\n\
-        MDE1MDgxMTUyWhcNNDExMDE1MDgxMTUyWjA2MR0wGwYDVQQKExRDYXNkb29yIE9y\n\
-        Z2FuaXphdGlvbjEVMBMGA1UEAxMMQ2FzZG9vciBDZXJ0MIICIjANBgkqhkiG9w0B\n\
-        AQEFAAOCAg8AMIICCgKCAgEAsInpb5E1/ym0f1RfSDSSE8IR7y+lw+RJjI74e5ej\n\
-        rq4b8zMYk7HeHCyZr/hmNEwEVXnhXu1P0mBeQ5ypp/QGo8vgEmjAETNmzkI1NjOQ\n\
-        CjCYwUrasO/f/MnI1C0j13vx6mV1kHZjSrKsMhYY1vaxTEP3+VB8Hjg3MHFWrb07\n\
-        uvFMCJe5W8+0rKErZCKTR8+9VB3janeBz//zQePFVh79bFZate/hLirPK0Go9P1g\n\
-        OvwIoC1A3sarHTP4Qm/LQRt0rHqZFybdySpyWAQvhNaDFE7mTstRSBb/wUjNCUBD\n\
-        PTSLVjC04WllSf6Nkfx0Z7KvmbPstSj+btvcqsvRAGtvdsB9h62Kptjs1Yn7GAuo\n\
-        I3qt/4zoKbiURYxkQJXIvwCQsEftUuk5ew5zuPSlDRLoLByQTLbx0JqLAFNfW3g/\n\
-        pzSDjgd/60d6HTmvbZni4SmjdyFhXCDb1Kn7N+xTojnfaNkwep2REV+RMc0fx4Gu\n\
-        hRsnLsmkmUDeyIZ9aBL9oj11YEQfM2JZEq+RVtUx+wB4y8K/tD1bcY+IfnG5rBpw\n\
-        IDpS262boq4SRSvb3Z7bB0w4ZxvOfJ/1VLoRftjPbLIf0bhfr/AeZMHpIKOXvfz4\n\
-        yE+hqzi68wdF0VR9xYc/RbSAf7323OsjYnjjEgInUtRohnRgCpjIk/Mt2Kt84Kb0\n\
-        wn8CAwEAAaMQMA4wDAYDVR0TAQH/BAIwADANBgkqhkiG9w0BAQsFAAOCAgEAn2lf\n\
-        DKkLX+F1vKRO/5gJ+Plr8P5NKuQkmwH97b8CS2gS1phDyNgIc4/LSdzuf4Awe6ve\n\
-        C06lVdWSIis8UPUPdjmT2uMPSNjwLxG3QsrimMURNwFlLTfRem/heJe0Zgur9J1M\n\
-        8haawdSdJjH2RgmFoDeE2r8NVRfhbR8KnCO1ddTJKuS1N0/irHz21W4jt4rxzCvl\n\
-        2nR42Fybap3O/g2JXMhNNROwZmNjgpsF7XVENCSuFO1jTywLaqjuXCg54IL7XVLG\n\
-        omKNNNcc8h1FCeKj/nnbGMhodnFWKDTsJcbNmcOPNHo6ixzqMy/Hqc+mWYv7maAG\n\
-        Jtevs3qgMZ8F9Qzr3HpUc6R3ZYYWDY/xxPisuKftOPZgtH979XC4mdf0WPnOBLqL\n\
-        2DJ1zaBmjiGJolvb7XNVKcUfDXYw85ZTZQ5b9clI4e+6bmyWqQItlwt+Ati/uFEV\n\
-        XzCj70B4lALX6xau1kLEpV9O1GERizYRz5P9NJNA7KoO5AVMp9w0DQTkt+LbXnZE\n\
-        HHnWKy8xHQKZF9sR7YBPGLs/Ac6tviv5Ua15OgJ/8dLRZ/veyFfGo2yZsI+hKVU5\n\
-        nCCJHBcAyFnm1hdvdwEdH33jDBjNB6ciotJZrf/3VYaIWSalADosHAgMWfXuWP+h\n\
-        8XKXmzlxuHbTMQYtZPDgspS5aK+S4Q9wb8RRAYo=\n\
-        -----END CERTIFICATE-----
-casdoor.organization-name=casbin
-casdoor.application-name=app-built-in
 server.port=8081
+
+# Casdoor server URL
+casdoor.endpoint=https://door.casdoor.com
+# client ID and secret of the application
+casdoor.client-id=294b09fbc17f95daf2fe
+casdoor.client-secret=dd8982f7046ccba1bbd7851d5c1ece4e52bf039d
+# the certificate of the cert used by the application: Casdoor -> Certs -> the cert -> Certificate
+casdoor.certificate=-----BEGIN CERTIFICATE-----
+...
+-----END CERTIFICATE-----
+# organization and name of the application
+casdoor.organization-name=casbin
+casdoor.application-name=app-vue-python-example
+
+# the Vue frontend, allowed to call the APIs with the session cookie (CORS)
+frontend-url=http://localhost:8080
 ```
 
-- install dependencies
+## Run
 
-  ```shell
-  PS .\casdoor-java-vue-example\web> yarn install
-  ```
+```shell
+git clone https://github.com/casdoor/casdoor-java-vue-example
+cd casdoor-java-vue-example
+```
 
-- run
+Backend, at http://localhost:8081:
 
-  ```shell
-  PS .\casdoor-java-vue-example\web> yarn serve
-  ```
+```shell
+mvn spring-boot:run
+```
 
-- Now, example runs its front end at port 8080 and runs it's back end at port 8081. You can modify the code and see what will happen.
+Frontend, at http://localhost:8080:
+
+```shell
+cd web
+yarn install
+yarn serve
+```
+
+Open http://localhost:8080 and click **Sign in**. On the demo server, sign in with username `admin` and password `123`.
+
+## Resources
+
+- [Casdoor documentation](https://casdoor.ai/docs/overview)
+- [casdoor-java-sdk](https://github.com/casdoor/casdoor-java-sdk)
+- [casdoor-vue-sdk](https://github.com/casdoor/casdoor-vue-sdk)
+
+## License
+
+[Apache-2.0](LICENSE)

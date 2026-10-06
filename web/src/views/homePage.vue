@@ -53,25 +53,17 @@ import backend from '@/backend/backend'
 let account = ref({})
 
 function logout() {
-  backend.logOut().then((res) => {
-    if (res['status'] === 'ok') {
-      console.log('success:', res)
-    } else {
-      console.log('fail:', res)
-    }
-    window.location.href = '/'
+  backend.logOut().then(() => {
+    window.location.href = '/login'
   })
 }
 
 onMounted(() => {
   backend.getAccount().then((res) => {
-    console.log(res);
-    if (res['status'] === 'ok') {
-      account.value = res['data']
-      console.log('success:', account)
-    }
-    else {
-      console.log('fail:', res)
+    if (res.status === 'ok') {
+      account.value = res.data
+    } else {
+      window.location.href = '/login'
     }
   })
 })

@@ -20,31 +20,18 @@
 </template>
 
 <script setup>
-  import { onMounted, getCurrentInstance } from 'vue'
-  import backend from '@/backend/backend'
+  import { useCasdoor } from 'casdoor-vue-sdk'
 
-  const instance = getCurrentInstance()
+  const casdoor = useCasdoor()
 
+  // both URLs carry a random state, kept in sessionStorage and checked by signin() on the callback page
   function login() {
-    //console.log(instance.proxy.getSigninUrl())
-    window.location.href = instance.proxy.getSigninUrl()
+    window.location.href = casdoor.getSigninUrl()
   }
 
   function signup() {
-    console.log(instance.proxy.getSignupUrl())
-    //window.location.href = instance.proxy.getSignupUrl()
+    window.location.href = casdoor.getSignupUrl()
   }
-  
-  onMounted(() => {
-    //get account
-    backend.getAccount().then((res) => {
-      if (res['status'] === 'ok') {
-        console.log('success:', res)
-      } else {
-        console.log('fail:', res)
-      }
-    })
-  })
 </script>
 
 <style scoped>
