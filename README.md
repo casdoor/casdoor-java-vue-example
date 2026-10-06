@@ -75,8 +75,9 @@ casdoor.endpoint=https://door.casdoor.com
 casdoor.client-id=294b09fbc17f95daf2fe
 casdoor.client-secret=dd8982f7046ccba1bbd7851d5c1ece4e52bf039d
 # the certificate of the cert used by the application: Casdoor -> Certs -> the cert -> Certificate
-casdoor.certificate=-----BEGIN CERTIFICATE-----
-...
+casdoor.certificate=\
+-----BEGIN CERTIFICATE-----\n\
+...\n\
 -----END CERTIFICATE-----
 # organization and name of the application
 casdoor.organization-name=casbin
